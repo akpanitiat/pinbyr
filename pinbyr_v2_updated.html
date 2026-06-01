@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PinByR — Music Creator Pin Studio</title>
+
+    <!-- PWA META -->
+    <meta name="theme-color" content="#0a0a14">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PinByR">
+    <meta name="description" content="Music Creator Pin Studio for SONGSBYR">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230a0a14'/><text y='68' x='50' font-size='52' text-anchor='middle' fill='%23c9a84c' font-family='serif'>P</text></svg>">
+
+    <!-- PWA MANIFEST (inline via data URI) -->
+    <link rel="manifest" href="data:application/json,{%22name%22:%22PinByR%20%E2%80%94%20Music%20Creator%20Pin%20Studio%22,%22short_name%22:%22PinByR%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%230a0a14%22,%22theme_color%22:%22%230a0a14%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%230a0a14'/><text y='340' x='256' font-size='280' text-anchor='middle' fill='%23c9a84c' font-family='serif'>P</text></svg>%22,%22sizes%22:%22512x512%22,%22type%22:%22image/svg+xml%22}]}">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100%; width: 100%;
+            background: #06060b; color: #f0ead8;
+            font-family: 'Cormorant Garamond', serif;
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+        }
+
+        #app-shell { display: flex; flex-direction: column; height: 100dvh; }
+
+        /* HEADER */
+        #app-header {
+            flex-shrink: 0; background: #0a0a14;
+            border-bottom: 1px solid #13131f;
+            padding: 11px 18px;
+            display: flex; align-items: center; justify-content: space-between;
+            z-index: 20;
+        }
+        .brand { font-family:'Cinzel',serif; font-size:13px; font-weight:600; color:#c9a84c; letter-spacing:0.42em; }
+        .brand-sub { font-family:'DM Mono',monospace; font-size:9px; color:#3a3a55; margin-left:10px; }
+        .status-dot { width:7px; height:7px; border-radius:50%; background:#10b981; display:inline-block; margin-right:5px; animation: blink 2s infinite; }
+        .status-txt { font-family:'DM Mono',monospace; font-size:9px; color:#3a3a55; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        /* PWA Install banner */
+        #install-bar {
+            display:none; background:rgba(201,168,76,0.08);
+            border-bottom:1px solid rgba(201,168,76,0.15);
+            padding:8px 18px; align-items:center; justify-content:space-between; gap:10px;
+        }
+        #install-bar p { font-family:'DM Mono',monospace; font-size:9px; color:#9e9580; }
+        #install-bar button { font-family:'DM Mono',monospace; font-size:9px; color:#c9a84c;
+            background:rgba(201,168,76,0.1); border:1px solid rgba(201,168,76,0.3);
+            padding:5px 12px; border-radius:4px; cursor:pointer; }
+        #install-bar .dismiss { background:none; border:none; color:#3a3a55; }
+
+        /* MOBILE TABS */
+        #mobile-tabs { display:none; flex-shrink:0; background:#0a0a14; border-bottom:1px solid #13131f; }
+        .mtab { flex:1; padding:9px; font-family:'DM Mono',monospace; font-size:11px; text-align:center; color:#3a3a55; border:none; border-bottom:2px solid transparent; background:none; cursor:pointer; transition:all .15s; }
+        .mtab.on { color:#c9a84c; border-bottom-color:#c9a84c; }
+
+        /* APP BODY */
+        #app-body { flex:1; display:flex; overflow:hidden; min-height:0; }
+
+        /* WORK PANEL */
+        #work-panel {
+            width: 400px; flex-shrink:0;
+            background:#08080f; border-right:1px solid #13131f;
+            overflow-y:auto; overflow-x:hidden;
+            padding:18px; display:flex; flex-direction:column; gap:20px;
+        }
+        #work-panel::-webkit-scrollbar { width:4px; }
+        #work-panel::-webkit-scrollbar-track { background:#08080f; }
+        #work-panel::-webkit-scrollbar-thumb { background:#1e1e30; border-radius:2px; }
+
+        /* PREVIEW PANEL */
+        #preview-panel {
+            flex:1; background:#04040a;
+            display:flex; flex-direction:column;
+            align-items:center;
+            gap:14px; overflow-y:auto; overflow-x:hidden; padding:16px;
+        }
+        #preview-panel::-webkit-scrollbar { width:4px; }
+        #preview-panel::-webkit-scrollbar-track { background:#04040a; }
+        #preview-panel::-webkit-scrollbar-thumb { background:#1e1e30; border-radius:2px; }
+
+        /* THE CANVAS */
+        #render-canvas {
+            display: block;
+            width: auto !important;
+            height: auto !important;
+            max-width: 100%;
+            max-height: 560px;
+            box-shadow: 0 20px 60px -10px rgba(0,0,0,0.95);
+            flex-shrink: 0;
+        }
+
+        /* EXPORT BTN */
+        #export-btn {
+            background:#c9a84c; color:#0d0d1a;
+            font-family:'DM Mono',monospace; font-size:11px; font-weight:700;
+            letter-spacing:.15em; text-transform:uppercase;
+            padding:10px 24px; border-radius:6px; border:none; cursor:pointer;
+            display:flex; align-items:center; gap:8px;
+            transition:all .15s; width:100%; max-width:260px; justify-content:center;
+        }
+        #export-btn:hover { background:#f0ead8; transform:translateY(-1px); }
+        #export-btn:active { transform:translateY(0); }
+
+        /* ── AI SEO PANEL ── */
+        #seo-panel {
+            width:100%; max-width:480px;
+            background:#090912; border:1px solid rgba(201,168,76,0.15);
+            border-radius:10px; padding:20px;
+            display:flex; flex-direction:column; gap:14px;
+        }
+
+        #seo-panel .seo-header {
+            display:flex; align-items:center; justify-content:space-between;
+        }
+        #seo-panel .seo-title {
+            font-family:'Cinzel',serif; font-size:12px; letter-spacing:0.25em;
+            color:#c9a84c; text-transform:uppercase;
+        }
+        #seo-panel .seo-badge {
+            font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.2em;
+            color:#10b981; background:rgba(16,185,129,0.08);
+            border:1px solid rgba(16,185,129,0.2); padding:3px 8px; border-radius:3px;
+        }
+
+        #copy-prompt-btn {
+            flex:1; padding:11px;
+            background:linear-gradient(135deg, rgba(201,168,76,0.12), rgba(192,35,58,0.08));
+            border:1px solid rgba(201,168,76,0.25);
+            color:#c9a84c; font-family:'DM Mono',monospace; font-size:10px;
+            letter-spacing:0.2em; text-transform:uppercase;
+            border-radius:6px; cursor:pointer; transition:all .2s;
+            display:flex; align-items:center; justify-content:center; gap:8px;
+        }
+        #copy-prompt-btn:hover { background:rgba(201,168,76,0.18); border-color:rgba(201,168,76,0.4); }
+        #copy-prompt-btn.copied { border-color:#10b981; color:#10b981; background:rgba(16,185,129,0.08); }
+
+        #paste-toggle-btn {
+            padding:11px 14px;
+            background:transparent;
+            border:1px solid rgba(201,168,76,0.15);
+            color:#3a3a55; font-family:'DM Mono',monospace; font-size:10px;
+            letter-spacing:0.15em; text-transform:uppercase;
+            border-radius:6px; cursor:pointer; transition:all .2s;
+            white-space:nowrap;
+        }
+        #paste-toggle-btn:hover { border-color:rgba(201,168,76,0.3); color:#9e9580; }
+        #paste-toggle-btn.active { border-color:rgba(201,168,76,0.4); color:#c9a84c; }
+
+        #paste-area-wrap {
+            display:none; flex-direction:column; gap:7px;
+        }
+        #paste-area-wrap.open { display:flex; }
+        #seo-paste-input {
+            width:100%; min-height:90px; resize:vertical;
+            background:#0d0d1a; border:1px solid rgba(201,168,76,0.2);
+            border-radius:5px; padding:10px 12px;
+            font-family:'DM Mono',monospace; font-size:10px;
+            color:#f0ead8; line-height:1.6; outline:none;
+            transition:border-color .2s;
+        }
+        #seo-paste-input:focus { border-color:rgba(201,168,76,0.45); }
+        #seo-paste-input::placeholder { color:#2a2a3a; }
+        #parse-seo-btn {
+            width:100%; padding:9px;
+            background:rgba(201,168,76,0.1); border:1px solid rgba(201,168,76,0.3);
+            color:#c9a84c; font-family:'DM Mono',monospace; font-size:10px;
+            letter-spacing:0.2em; text-transform:uppercase;
+            border-radius:5px; cursor:pointer; transition:all .2s;
+        }
+        #parse-seo-btn:hover { background:rgba(201,168,76,0.18); }
+        @keyframes spin { to { transform:rotate(360deg); } }
+
+        .seo-field { display:flex; flex-direction:column; gap:6px; }
+        .seo-field-label {
+            font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.3em;
+            color:#7a5e2a; text-transform:uppercase;
+            display:flex; align-items:center; justify-content:space-between;
+        }
+        .seo-copy-btn {
+            font-family:'DM Mono',monospace; font-size:8px; color:#3a3a55;
+            background:none; border:none; cursor:pointer; letter-spacing:0.1em;
+            transition:color .15s; padding:0;
+        }
+        .seo-copy-btn:hover { color:#c9a84c; }
+        .seo-copy-btn.ok { color:#10b981; }
+
+        .seo-value {
+            background:#0d0d1a; border:1px solid #1a1a2a; border-radius:5px;
+            padding:10px 12px; font-size:13px; font-weight:300; color:#f0ead8;
+            line-height:1.6; min-height:36px;
+            transition:border-color .2s;
+        }
+        .seo-value.highlight { border-color:rgba(201,168,76,0.3); }
+
+        .seo-tags {
+            display:flex; flex-wrap:wrap; gap:5px;
+        }
+        .seo-tag {
+            font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.15em;
+            color:#9e9580; background:#0d0d1a; border:1px solid #1a1a2a;
+            padding:3px 8px; border-radius:3px; text-transform:uppercase;
+        }
+        .seo-empty {
+            font-family:'DM Mono',monospace; font-size:9px; color:#2a2a3a;
+            text-align:center; padding:16px 0; letter-spacing:0.2em;
+        }
+        .seo-error {
+            font-family:'DM Mono',monospace; font-size:9px; color:#f43f5e;
+            background:rgba(244,63,94,0.06); border:1px solid rgba(244,63,94,0.15);
+            border-radius:4px; padding:10px; letter-spacing:0.1em; display:none;
+        }
+
+        /* CONTROLS SHARED */
+        .sec-label {
+            font-family:'Cinzel',serif; font-size:9px; letter-spacing:.2em;
+            text-transform:uppercase; color:#c9a84c;
+            border-bottom:1px solid #13131f; padding-bottom:7px; margin-bottom:11px;
+        }
+        .card { background:#0b0b14; border:1px solid #13131f; border-radius:9px; padding:13px; }
+        .ctrl-label { display:block; font-family:'DM Mono',monospace; font-size:9px; color:#6a6a85; margin-bottom:4px; }
+        .ctrl-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; }
+        .ctrl-val { font-family:'DM Mono',monospace; font-size:9px; color:#6a6a85; }
+        .g2 { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+        .g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px; }
+        .g4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:5px; }
+
+        input[type=range] { -webkit-appearance:none; appearance:none; background:#181828; height:3px; border-radius:2px; outline:none; width:100%; margin-top:4px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:#c9a84c; cursor:pointer; }
+
+        .ctrl-inp {
+            width:100%; background:#0d0d1a; border:1px solid #1a1a2a; border-radius:5px;
+            padding:7px 9px; font-size:11px; font-family:'DM Mono',monospace;
+            color:#f0ead8; outline:none; transition:border-color .15s;
+        }
+        .ctrl-inp:focus { border-color:#c9a84c; }
+        textarea.ctrl-inp { font-family:'Cormorant Garamond',serif; font-size:13px; font-style:italic; resize:vertical; min-height:76px; }
+        select.ctrl-inp { cursor:pointer; }
+
+        .lbtn { padding:6px 4px; font-size:10px; font-family:'DM Mono',monospace; border-radius:4px; border:1px solid #1a1a2a; background:transparent; color:#404055; cursor:pointer; transition:all .15s; text-align:center; }
+        .lbtn:hover { border-color:#2a2a3a; color:#9e9580; }
+        .lbtn.on { border-color:#c9a84c; background:#0d0d1a; color:#c9a84c; }
+
+        .dbtn { padding:5px 2px; font-size:12px; font-family:'DM Mono',monospace; border-radius:4px; border:1px solid #1a1a2a; background:transparent; color:#404055; cursor:pointer; transition:all .15s; text-align:center; }
+        .dbtn.on { border-color:#c9a84c; background:#0d0d1a; color:#c9a84c; }
+
+        .tbtn { font-size:10px; font-family:'DM Mono',monospace; background:#0d0d14; border:1px solid #1a1a2a; color:#6a6a85; padding:5px 9px; border-radius:4px; cursor:pointer; transition:all .15s; }
+        .tbtn:hover { border-color:#2a2a3a; color:#f0ead8; }
+
+        #drop-zone { border:2px dashed #1a1a2a; border-radius:7px; padding:14px; text-align:center; cursor:pointer; transition:all .2s; }
+        #drop-zone:hover, #drop-zone.dz-over { border-color:rgba(201,168,76,.4); background:rgba(13,13,26,.3); }
+
+        /* MOBILE */
+        @media (max-width: 720px) {
+            #mobile-tabs { display:flex; }
+            #app-body { flex-direction:column; }
+            #work-panel { width:100%; border-right:none; flex:1; }
+            #preview-panel { flex:1; padding:10px; }
+            #work-panel.mhide, #preview-panel.mhide { display:none; }
+            #render-canvas { max-height:calc(100dvh - 230px); }
+            #export-btn { max-width:100%; }
+            #seo-panel { max-width:100%; }
+        }
+
+        /* BREATHING BRAND */
+        .brand-wrap { position:relative; display:inline-flex; align-items:center; }
+        .brand {
+            font-family:'Cinzel',serif; font-size:13px; font-weight:600;
+            color:#c9a84c; letter-spacing:0.42em;
+            position:relative; z-index:2;
+            animation: breathe-text 3.5s ease-in-out infinite;
+        }
+        .brand-glow {
+            position:absolute; inset:-8px -14px; border-radius:6px;
+            background:radial-gradient(ellipse at center, rgba(201,168,76,0.22) 0%, rgba(201,168,76,0.06) 55%, transparent 100%);
+            animation:breathe-glow 3.5s ease-in-out infinite;
+            z-index:1; pointer-events:none;
+        }
+        @keyframes breathe-glow {
+            0%,100% { opacity:0.35; transform:scale(0.9); }
+            50%      { opacity:1;   transform:scale(1.1); }
+        }
+        @keyframes breathe-text {
+            0%,100% { color:#a07c32; text-shadow:none; }
+            50%      { color:#e8c96b; text-shadow:0 0 20px rgba(201,168,76,0.6),0 0 8px rgba(201,168,76,0.35); }
+        }
+
+        /* SAVED TEMPLATES */
+        .saved-slot {
+            background:#0d0d1a; border:1px solid #1a1a2a; border-radius:7px;
+            padding:9px 11px; display:flex; align-items:center; gap:9px; transition:border-color .15s;
+        }
+        .saved-slot:hover { border-color:#2a2a3a; }
+        .saved-thumb { width:26px; height:39px; border-radius:3px; background:#13131f; flex-shrink:0; overflow:hidden; }
+        .saved-thumb img { width:100%; height:100%; object-fit:cover; }
+        .saved-name { flex:1; font-family:'DM Mono',monospace; font-size:10px; color:#9e9580; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .sload-btn { font-family:'DM Mono',monospace; font-size:9px; color:#c9a84c; background:none; border:none; cursor:pointer; padding:3px 6px; border-radius:3px; }
+        .sload-btn:hover { background:rgba(201,168,76,.1); }
+        .sdel-btn  { font-family:'DM Mono',monospace; font-size:9px; color:#f43f5e; background:none; border:none; cursor:pointer; padding:3px 5px; border-radius:3px; }
+        .sdel-btn:hover { background:rgba(244,63,94,.08); }
+        #save-name-inp {
+            flex:1; background:#0d0d1a; border:1px solid #1a1a2a; border-radius:5px;
+            padding:7px 9px; font-size:11px; font-family:'DM Mono',monospace;
+            color:#f0ead8; outline:none; transition:border-color .15s;
+        }
+        #save-name-inp:focus { border-color:#c9a84c; }
+        #save-now-btn {
+            background:rgba(201,168,76,.12); border:1px solid rgba(201,168,76,.3);
+            color:#c9a84c; font-family:'DM Mono',monospace; font-size:10px;
+            padding:7px 12px; border-radius:5px; cursor:pointer; transition:all .15s; white-space:nowrap;
+        }
+        #save-now-btn:hover { background:rgba(201,168,76,.22); }
+        #saved-list { display:flex; flex-direction:column; gap:7px; margin-top:10px; }
+        .empty-msg { font-family:'DM Mono',monospace; font-size:9px; color:#2a2a3a; text-align:center; padding:12px 0; }
+
+        /* OFFLINE TOAST */
+        #offline-toast {
+            display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+            background:#0d0d1a; border:1px solid rgba(201,168,76,0.3);
+            font-family:'DM Mono',monospace; font-size:9px; color:#c9a84c;
+            padding:8px 16px; border-radius:4px; z-index:999; letter-spacing:0.2em;
+        }
+    </style>
+</head>
+<body>
+<div id="offline-toast">◈ OFFLINE MODE — All features available</div>
+<div id="app-shell">
+
+    <header id="app-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div class="brand-wrap">
+                <div class="brand-glow"></div>
+                <span class="brand">PINBYR</span>
+            </div>
+            <span class="brand-sub">/ Music Creator Pin Studio</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;">
+            <span id="offline-indicator" style="display:none;font-family:'DM Mono',monospace;font-size:9px;color:#f43f5e;">OFFLINE</span>
+            <span class="status-dot"></span>
+            <span class="status-txt" id="status-txt">Offline-Ready</span>
+        </div>
+    </header>
+
+    <!-- PWA Install Bar -->
+    <div id="install-bar">
+        <p>◈ Install PinByR to your home screen — works fully offline</p>
+        <div style="display:flex;gap:8px;">
+            <button onclick="installPWA()">Install App</button>
+            <button class="dismiss" onclick="document.getElementById('install-bar').style.display='none'">✕</button>
+        </div>
+    </div>
+
+    <div id="mobile-tabs">
+        <button class="mtab on" onclick="mTab('work',this)">✏ Edit</button>
+        <button class="mtab" onclick="mTab('preview',this)">👁 Preview</button>
+    </div>
+
+    <div id="app-body">
+
+        <!-- WORK PANEL -->
+        <div id="work-panel">
+
+            <!-- Pin Type -->
+            <div>
+                <div class="sec-label">Pin Type</div>
+                <p style="font-family:'DM Mono',monospace;font-size:9px;color:#3a3a55;margin-bottom:9px;">Tell the AI exactly what kind of pin this is</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <button class="lbtn on" id="btn-quote-lyric" onclick="applyLayout('quote-lyric','Quote / Lyric Pin')">Quote · Lyric</button>
+                    <button class="lbtn" id="btn-educational" onclick="applyLayout('educational','Educational List Pin')">Educational</button>
+                    <button class="lbtn" id="btn-product" onclick="applyLayout('product','Product Promo Pin')">Product Promo</button>
+                    <button class="lbtn" id="btn-artist-era" onclick="applyLayout('artist-era','Artist / Era Statement Pin')">Artist · Era</button>
+                    <button class="lbtn" id="btn-behind-scenes" onclick="applyLayout('behind-scenes','Behind the Scenes Pin')">Behind Scenes</button>
+                    <button class="lbtn" id="btn-philosophy" onclick="applyLayout('philosophy','Philosophy Quote Pin')">Philosophy</button>
+                </div>
+            </div>
+
+            <!-- Image -->
+            <div class="card">
+                <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #13131f;padding-bottom:8px;margin-bottom:11px;">
+                    <span class="sec-label" style="border:none;margin:0;padding:0;">Image Background</span>
+                    <button id="btn-clear" onclick="clearImg()" style="display:none;font-family:'DM Mono',monospace;font-size:9px;color:#f43f5e;background:none;border:none;cursor:pointer;">✕ Remove</button>
+                </div>
+                <div id="drop-zone" onclick="document.getElementById('file-inp').click()">
+                    <input type="file" id="file-inp" accept="image/*" style="display:none" onchange="handleImg(event)">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#7a5e2a" style="width:20px;height:20px;margin:0 auto 5px;display:block;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+                    </svg>
+                    <p style="font-family:'DM Mono',monospace;font-size:10px;color:#6a6a85;">Tap or drop image</p>
+                    <p style="font-family:'DM Mono',monospace;font-size:9px;color:#2a2a3a;margin-top:3px;">JPG · PNG · WEBP</p>
+                </div>
+                <div id="img-ctrls" style="margin-top:11px;opacity:.35;pointer-events:none;display:flex;flex-direction:column;gap:9px;transition:all .2s;">
+                    <div>
+                        <div class="ctrl-row"><span class="ctrl-label" style="margin:0;">Opacity</span><span class="ctrl-val" id="v-opacity">60%</span></div>
+                        <input type="range" id="s-opacity" min="0" max="100" value="60" oninput="render()">
+                    </div>
+                    <div class="g2">
+                        <div>
+                            <div class="ctrl-row"><span class="ctrl-label" style="margin:0;">Blur</span><span class="ctrl-val" id="v-blur">4px</span></div>
+                            <input type="range" id="s-blur" min="0" max="25" value="4" oninput="render()">
+                        </div>
+                        <div>
+                            <div class="ctrl-row"><span class="ctrl-label" style="margin:0;">Dark Tint</span><span class="ctrl-val" id="v-darken">40%</span></div>
+                            <input type="range" id="s-darken" min="0" max="95" value="40" oninput="render()">
+                        </div>
+                    </div>
+                    <div class="g2">
+                        <div>
+                            <div class="ctrl-row"><span class="ctrl-label" style="margin:0;">Zoom</span><span class="ctrl-val" id="v-scale">110%</span></div>
+                            <input type="range" id="s-scale" min="100" max="200" value="110" oninput="render()">
+                        </div>
+                        <div>
+                            <div class="ctrl-row"><span class="ctrl-label" style="margin:0;">Vertical</span><span class="ctrl-val" id="v-y">0%</span></div>
+                            <input type="range" id="s-y" min="-50" max="50" value="0" oninput="render()">
+                        </div>
+                    </div>
+                    <div class="g2">
+                        <div>
+                            <label class="ctrl-label">Overlay</label>
+                            <select id="sel-overlay" class="ctrl-inp" style="padding:5px 7px;font-size:10px;" onchange="render()">
+                                <option value="indigo" selected>Indigo</option>
+                                <option value="crimson">Crimson</option>
+                                <option value="gold">Gold</option>
+                                <option value="black">Black</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="ctrl-label">Filter</label>
+                            <select id="sel-filter" class="ctrl-inp" style="padding:5px 7px;font-size:10px;" onchange="render()">
+                                <option value="normal" selected>Original</option>
+                                <option value="grayscale">Noir</option>
+                                <option value="sepia">Vintage</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div>
+                <div class="sec-label">Pin Content</div>
+                <div style="display:flex;flex-direction:column;gap:9px;">
+                    <div>
+                        <label class="ctrl-label">Tag / Release Label</label>
+                        <input type="text" id="inp-tag" value="NEW SINGLE / OUT NOW" class="ctrl-inp" oninput="render()">
+                    </div>
+                    <div>
+                        <label class="ctrl-label">Song / Album Title <span style="color:#2a2a3a;">(blank to hide)</span></label>
+                        <input type="text" id="inp-title" value="Midnight Signal" class="ctrl-inp" style="font-family:'Cinzel',serif;" oninput="render()">
+                    </div>
+                    <div>
+                        <div class="ctrl-row">
+                            <label class="ctrl-label" style="margin:0;">Lyric / Quote / Caption</label>
+                            <span class="ctrl-val" id="char-count"></span>
+                        </div>
+                        <textarea id="inp-quote" class="ctrl-inp" oninput="render()">"Every song I've ever written was a door. Some led to rooms you'd want to live in. Others — you'd want to burn."</textarea>
+                    </div>
+                    <div>
+                        <label class="ctrl-label">Artist / Source Credit</label>
+                        <input type="text" id="inp-author" value="— Stream now. Link in bio." class="ctrl-inp" oninput="render()">
+                    </div>
+                    <div>
+                        <label class="ctrl-label">Board / Context <span style="color:#2a2a3a;">(helps AI write better SEO)</span></label>
+                        <select id="inp-board" class="ctrl-inp" style="padding:5px 7px;font-size:10px;">
+                            <option value="Independent Music Business">Board 01 — Independent Music Business</option>
+                            <option value="Music Publishing 101">Board 02 — Music Publishing 101</option>
+                            <option value="Artist Legacy Building">Board 03 — Artist Legacy Building</option>
+                            <option value="Own Your Masters">Board 04 — Own Your Masters</option>
+                            <option value="Intentional Music Creation">Board 05 — Intentional Music Creation</option>
+                            <option value="R BILL The Source">Board 06 — R BILL · The Source</option>
+                            <option value="Music Platform Without Algorithms">Board 07 — Music Platform Without Algorithms</option>
+                            <option value="African Artist Business Tips">Board 08 — African Artist Business Tips</option>
+                            <option value="Music Quotes and Philosophy">Board 09 — Music Quotes & Philosophy</option>
+                            <option value="Digital Products for Musicians">Board 10 — Digital Products for Musicians</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Style -->
+            <div>
+                <div class="sec-label">Visual Style</div>
+                <div style="display:flex;flex-direction:column;gap:9px;">
+                    <div class="g2">
+                        <div>
+                            <label class="ctrl-label">Accent Color</label>
+                            <select id="sel-accent" class="ctrl-inp" style="padding:5px 7px;font-size:10px;" onchange="render()">
+                                <option value="gold" selected>Gold</option>
+                                <option value="crimson">Crimson</option>
+                                <option value="white">White</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="ctrl-label">Background</label>
+                            <select id="sel-bg" class="ctrl-inp" style="padding:5px 7px;font-size:10px;" onchange="render()">
+                                <option value="solid">Deep Indigo</option>
+                                <option value="radial" selected>Vignette Glow</option>
+                                <option value="textured">Grain Texture</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="g2">
+                        <div>
+                            <label class="ctrl-label">Border Frame</label>
+                            <select id="sel-frame" class="ctrl-inp" style="padding:5px 7px;font-size:10px;" onchange="render()">
+                                <option value="none">None</option>
+                                <option value="thin" selected>Thin Frame</option>
+                                <option value="flank">Left Accent</option>
+                                <option value="corners">Corners</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="ctrl-label">Wordmark</label>
+                            <select id="sel-wordmark" class="ctrl-inp" style="padding:5px 7px;font-size:10px;" onchange="render()">
+                                <option value="bottom" selected>Bottom</option>
+                                <option value="top">Top</option>
+                                <option value="both">Both</option>
+                                <option value="none">Hidden</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="ctrl-label">Divider</label>
+                        <div class="g4">
+                            <button class="dbtn" id="d-none" onclick="setDiv('none')">None</button>
+                            <button class="dbtn on" id="d-diamond" onclick="setDiv('diamond')">◆</button>
+                            <button class="dbtn" id="d-line" onclick="setDiv('line')">—</button>
+                            <button class="dbtn" id="d-asterisk" onclick="setDiv('asterisk')">✦</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contrast -->
+            <div class="card" style="border-color:rgba(201,168,76,.12);">
+                <div class="sec-label">Contrast & Legibility</div>
+                <div style="display:flex;flex-direction:column;gap:9px;">
+                    <div class="g2">
+                        <div>
+                            <label class="ctrl-label">Text Shadow</label>
+                            <select id="sel-shadow" class="ctrl-inp" style="padding:5px 7px;font-size:10px;" onchange="render()">
+                                <option value="none">None</option>
+                                <option value="subtle" selected>Subtle</option>
+                                <option value="strong">Strong</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="ctrl-label">Backplate</label>
+                            <select id="sel-plate" class="ctrl-inp" style="padding:5px 7px;font-size:10px;" onchange="render()">
+                                <option value="none" selected>None</option>
+                                <option value="frosted">Frosted Card</option>
+                                <option value="bordered">Gold Frame</option>
+                                <option value="vignette">Vignette</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="g2">
+                        <div>
+                            <label class="ctrl-label">Quote Weight</label>
+                            <select id="sel-weight" class="ctrl-inp" style="padding:5px 7px;font-size:10px;" onchange="render()">
+                                <option value="300">Light</option>
+                                <option value="400" selected>Regular</option>
+                                <option value="500">Medium</option>
+                                <option value="600">Semi-Bold</option>
+                                <option value="700">Bold</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="ctrl-row"><label class="ctrl-label" style="margin:0;">Quote Size</label><span class="ctrl-val" id="v-qsize">24</span></div>
+                            <input type="range" id="s-qsize" min="18" max="42" value="24" oninput="render()" style="margin-top:9px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pin Type Presets -->
+            <div class="card">
+                <div class="sec-label" style="border:none;margin-bottom:6px;">Quick Pin Presets</div>
+                <p style="font-family:'DM Mono',monospace;font-size:9px;color:#3a3a55;margin-bottom:9px;">Load content for each pin type</p>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                    <button class="tbtn" onclick="loadTpl(0)">Single Drop</button>
+                    <button class="tbtn" onclick="loadTpl(1)">Lyric Card</button>
+                    <button class="tbtn" onclick="loadTpl(2)">Album Announce</button>
+                    <button class="tbtn" onclick="loadTpl(3)">Era Statement</button>
+                    <button class="tbtn" onclick="loadTpl(4)">Philosophy</button>
+                    <button class="tbtn" onclick="loadTpl(5)">Behind Scenes</button>
+                </div>
+            </div>
+
+            <!-- Product Pin Templates -->
+            <div class="card" style="border-color:rgba(192,35,58,0.2);">
+                <div class="sec-label" style="border:none;margin-bottom:4px;color:#c0233a;">◈ Product Pin Templates</div>
+                <p style="font-family:'DM Mono',monospace;font-size:9px;color:#3a3a55;margin-bottom:12px;">Load product, set your price, export</p>
+
+                <!-- Product 1 -->
+                <div style="background:#0d0d1a;border:1px solid #1a1a2a;border-radius:6px;padding:11px;margin-bottom:8px;">
+                    <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.3em;color:#7a5e2a;text-transform:uppercase;margin-bottom:6px;">Product 01 — Ownership Checklist</div>
+                    <div style="display:flex;gap:7px;align-items:center;">
+                        <div style="flex:1;">
+                            <label class="ctrl-label">Your Price</label>
+                            <input type="text" id="prod1-price" value="$9" class="ctrl-inp" placeholder="e.g. $9" style="padding:5px 8px;font-family:'Cinzel',serif;font-size:13px;color:#c9a84c;">
+                        </div>
+                        <button class="tbtn" onclick="loadProductTpl(0)" style="margin-top:14px;white-space:nowrap;border-color:rgba(192,35,58,0.3);color:#c0233a;">Load Pin</button>
+                    </div>
+                </div>
+
+                <!-- Product 2 -->
+                <div style="background:#0d0d1a;border:1px solid #1a1a2a;border-radius:6px;padding:11px;margin-bottom:8px;">
+                    <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.3em;color:#7a5e2a;text-transform:uppercase;margin-bottom:6px;">Product 02 — Legacy Starter Kit</div>
+                    <div style="display:flex;gap:7px;align-items:center;">
+                        <div style="flex:1;">
+                            <label class="ctrl-label">Your Price</label>
+                            <input type="text" id="prod2-price" value="$22" class="ctrl-inp" placeholder="e.g. $22" style="padding:5px 8px;font-family:'Cinzel',serif;font-size:13px;color:#c9a84c;">
+                        </div>
+                        <button class="tbtn" onclick="loadProductTpl(1)" style="margin-top:14px;white-space:nowrap;border-color:rgba(192,35,58,0.3);color:#c0233a;">Load Pin</button>
+                    </div>
+                </div>
+
+                <!-- Product 3 -->
+                <div style="background:#0d0d1a;border:1px solid #1a1a2a;border-radius:6px;padding:11px;">
+                    <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.3em;color:#7a5e2a;text-transform:uppercase;margin-bottom:6px;">Product 03 — Build Your Own Source</div>
+                    <div style="display:flex;gap:7px;align-items:center;">
+                        <div style="flex:1;">
+                            <label class="ctrl-label">Your Price</label>
+                            <input type="text" id="prod3-price" value="$42" class="ctrl-inp" placeholder="e.g. $42" style="padding:5px 8px;font-family:'Cinzel',serif;font-size:13px;color:#c9a84c;">
+                        </div>
+                        <button class="tbtn" onclick="loadProductTpl(2)" style="margin-top:14px;white-space:nowrap;border-color:rgba(192,35,58,0.3);color:#c0233a;">Load Pin</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Saved Templates -->
+            <div class="card" style="border-color:rgba(201,168,76,.15);">
+                <div class="sec-label" style="border:none;margin-bottom:10px;">Saved Pin Templates</div>
+                <p style="font-family:'DM Mono',monospace;font-size:9px;color:#3a3a55;margin-bottom:10px;">Save your current setup for quick reload.</p>
+                <div style="display:flex;gap:7px;align-items:center;">
+                    <input type="text" id="save-name-inp" placeholder="Template name e.g. Board 02 Dark" maxlength="40">
+                    <button id="save-now-btn" onclick="saveTemplate()">◈ Save</button>
+                </div>
+                <div id="saved-list">
+                    <div class="empty-msg" id="empty-msg">No saved templates yet</div>
+                </div>
+            </div>
+
+        </div><!-- /work-panel -->
+
+        <!-- PREVIEW PANEL -->
+        <div id="preview-panel">
+            <div style="text-align:center;">
+                <p style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;color:#c9a84c;margin:0;">LIVE PREVIEW · 2:3</p>
+                <p style="font-family:'DM Mono',monospace;font-size:8px;color:#1e1e2e;margin:2px 0 0;">What you see = what you export</p>
+            </div>
+
+            <canvas id="render-canvas" width="1000" height="1500"></canvas>
+
+            <button id="export-btn" onclick="doExport()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width:14px;height:14px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+                </svg>
+                Export 2× PNG
+            </button>
+            <p style="font-family:'DM Mono',monospace;font-size:8px;color:#1e1e2e;text-align:center;">2000 × 3000px · Retina · Lossless</p>
+
+            <!-- ═══════════════════════════════════
+                 AI SEO PANEL
+            ═══════════════════════════════════ -->
+            <div id="seo-panel">
+                <div class="seo-header">
+                    <div class="seo-title">◈ AI Pinterest Copy</div>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <span id="trend-badge" style="display:none;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.15em;color:#10b981;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);padding:3px 7px;border-radius:3px;">◈ LIVE TRENDS</span>
+                        <div class="seo-badge">Powered by Claude</div>
+                    </div>
+                </div>
+
+                <!-- description moved below buttons -->
+
+                <p style="font-family:'DM Mono',monospace;font-size:9px;color:#3a3a55;line-height:1.6;">
+                    Copy the prompt → paste it into Claude chat → get your SEO copy → paste it back here. Free forever.
+                </p>
+
+                <div style="display:flex;gap:8px;">
+                    <button id="copy-prompt-btn" onclick="copyPrompt()">
+                        ✦ Copy Prompt
+                    </button>
+                    <button id="paste-toggle-btn" onclick="togglePasteArea()">Paste Copy ↓</button>
+                </div>
+
+                <div id="paste-area-wrap">
+                    <textarea id="seo-paste-input" placeholder="Paste Claude's full JSON response here, then click Parse…"></textarea>
+                    <button id="parse-seo-btn" onclick="parsePastedSEO()">◈ Parse &amp; Fill Fields</button>
+                </div>
+
+                <div id="seo-error" class="seo-error"></div>
+
+                <!-- Results -->
+                <div id="seo-results" style="display:none;flex-direction:column;gap:12px;">
+
+                    <div class="seo-field">
+                        <div class="seo-field-label">
+                            <span>Pinterest Title <span style="color:#2a2a3a;">(100 chars max)</span></span>
+                            <button class="seo-copy-btn" onclick="seoCopy('seo-val-title', this)">Copy</button>
+                        </div>
+                        <div class="seo-value" id="seo-val-title"></div>
+                    </div>
+
+                    <div class="seo-field">
+                        <div class="seo-field-label">
+                            <span>Pin Description <span style="color:#2a2a3a;">(saves-optimized)</span></span>
+                            <button class="seo-copy-btn" onclick="seoCopy('seo-val-desc', this)">Copy</button>
+                        </div>
+                        <div class="seo-value" id="seo-val-desc" style="min-height:80px;"></div>
+                    </div>
+
+                    <div class="seo-field">
+                        <div class="seo-field-label">
+                            <span>Tagged Topics</span>
+                            <button class="seo-copy-btn" onclick="seoCopyTags(this)">Copy All</button>
+                        </div>
+                        <div class="seo-tags" id="seo-val-tags"></div>
+                    </div>
+
+                    <div class="seo-field">
+                        <div class="seo-field-label">
+                            <span>Alt Text <span style="color:#2a2a3a;">(accessibility + search)</span></span>
+                            <button class="seo-copy-btn" onclick="seoCopy('seo-val-alt', this)">Copy</button>
+                        </div>
+                        <div class="seo-value" id="seo-val-alt"></div>
+                    </div>
+
+                    <div class="seo-field">
+                        <div class="seo-field-label">
+                            <span>Best Board to Post</span>
+                        </div>
+                        <div class="seo-value" id="seo-val-board" style="color:#c9a84c;font-family:'DM Mono',monospace;font-size:11px;"></div>
+                    </div>
+
+                    <div class="seo-field">
+                        <div class="seo-field-label">
+                            <span>Best Time to Post</span>
+                        </div>
+                        <div class="seo-value" id="seo-val-time" style="font-family:'DM Mono',monospace;font-size:11px;color:#9e9580;"></div>
+                    </div>
+
+                </div>
+
+                <div id="seo-empty" class="seo-empty">
+                    Generate copy after designing your pin
+                </div>
+            </div>
+
+        </div><!-- /preview-panel -->
+
+    </div><!-- /app-body -->
+</div><!-- /app-shell -->
+
+<script>
+// ─────────────────────────────────────────────
+//  PWA SERVICE WORKER (inline registration)
+// ─────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+    const swCode = `
+const CACHE = 'pinbyr-v2';
+const ASSETS = [self.location.href];
+self.addEventListener('install', e => {
+    e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+});
+self.addEventListener('activate', e => {
+    e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+});
+self.addEventListener('fetch', e => {
+    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => {
+        if (!res || res.status !== 200) return res;
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return res;
+    }).catch(() => caches.match(e.request))));
+});
+    `;
+    const blob = new Blob([swCode], { type: 'application/javascript' });
+    const swURL = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swURL).catch(() => {});
+}
+
+// ─────────────────────────────────────────────
+//  OFFLINE / ONLINE DETECTION
+// ─────────────────────────────────────────────
+function updateNetworkStatus() {
+    const isOnline = navigator.onLine;
+    document.getElementById('offline-indicator').style.display = isOnline ? 'none' : 'inline';
+    document.getElementById('status-txt').textContent = isOnline ? 'Offline-Ready' : 'Offline Mode';
+    const toast = document.getElementById('offline-toast');
+    if (!isOnline) {
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 3500);
+    }
+}
+window.addEventListener('online', updateNetworkStatus);
+window.addEventListener('offline', updateNetworkStatus);
+updateNetworkStatus();
+
+// ─────────────────────────────────────────────
+//  PWA INSTALL
+// ─────────────────────────────────────────────
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('install-bar').style.display = 'flex';
+});
+function installPWA() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+        deferredPrompt = null;
+        document.getElementById('install-bar').style.display = 'none';
+    });
+}
+
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+let uploadedImg = null;
+let divider = 'diamond';
+let layoutMode = 'quote-lyric';
+let pinTypeLabel = 'Quote / Lyric Pin';
+
+// ─────────────────────────────────────────────
+//  MOBILE TABS
+// ─────────────────────────────────────────────
+function mTab(tab, btn) {
+    document.querySelectorAll('.mtab').forEach(t => t.classList.remove('on'));
+    btn.classList.add('on');
+    const wp = document.getElementById('work-panel');
+    const pp = document.getElementById('preview-panel');
+    if (tab === 'work') { wp.classList.remove('mhide'); pp.classList.add('mhide'); }
+    else                { wp.classList.add('mhide');    pp.classList.remove('mhide'); }
+}
+
+// ─────────────────────────────────────────────
+//  DRAG & DROP
+// ─────────────────────────────────────────────
+const dz = document.getElementById('drop-zone');
+['dragenter','dragover'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.add('dz-over'); }));
+['dragleave','drop'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.remove('dz-over'); }));
+dz.addEventListener('drop', e => {
+    const f = e.dataTransfer.files[0]; if (!f) return;
+    const fi = document.getElementById('file-inp');
+    const dt = new DataTransfer(); dt.items.add(f); fi.files = dt.files;
+    handleImg({ target: fi });
+});
+
+function handleImg(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        const img = new Image();
+        img.onload = function() {
+            uploadedImg = img;
+            document.getElementById('btn-clear').style.display = 'inline';
+            const ctrl = document.getElementById('img-ctrls');
+            ctrl.style.opacity = '1'; ctrl.style.pointerEvents = 'auto';
+            render();
+        };
+        img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearImg() {
+    uploadedImg = null;
+    document.getElementById('file-inp').value = '';
+    document.getElementById('btn-clear').style.display = 'none';
+    const ctrl = document.getElementById('img-ctrls');
+    ctrl.style.opacity = '.35'; ctrl.style.pointerEvents = 'none';
+    render();
+}
+
+// ─────────────────────────────────────────────
+//  LAYOUT / PIN TYPE
+// ─────────────────────────────────────────────
+function applyLayout(type, label) {
+    layoutMode = type;
+    pinTypeLabel = label || type;
+    document.querySelectorAll('.lbtn').forEach(b => b.classList.remove('on'));
+    const btn = document.getElementById('btn-' + type);
+    if (btn) btn.classList.add('on');
+    // Visual style defaults per type
+    if (type === 'quote-lyric') {
+        document.getElementById('sel-frame').value = 'thin';
+        document.getElementById('sel-accent').value = 'gold';
+        document.getElementById('sel-bg').value = 'radial';
+    } else if (type === 'educational') {
+        document.getElementById('sel-frame').value = 'flank';
+        document.getElementById('sel-accent').value = 'gold';
+        document.getElementById('sel-bg').value = 'radial';
+    } else if (type === 'product') {
+        document.getElementById('sel-frame').value = 'thin';
+        document.getElementById('sel-accent').value = 'crimson';
+        document.getElementById('sel-bg').value = 'solid';
+    } else if (type === 'artist-era') {
+        document.getElementById('sel-frame').value = 'none';
+        document.getElementById('sel-accent').value = 'gold';
+        document.getElementById('sel-bg').value = 'radial';
+    } else if (type === 'behind-scenes') {
+        document.getElementById('sel-frame').value = 'corners';
+        document.getElementById('sel-accent').value = 'white';
+        document.getElementById('sel-bg').value = 'textured';
+    } else if (type === 'philosophy') {
+        document.getElementById('sel-frame').value = 'corners';
+        document.getElementById('sel-accent').value = 'gold';
+        document.getElementById('sel-bg').value = 'radial';
+    }
+    render();
+}
+
+function setDiv(type) {
+    divider = type;
+    document.querySelectorAll('.dbtn').forEach(b => b.classList.remove('on'));
+    document.getElementById('d-' + type).classList.add('on');
+    render();
+}
+
+// ─────────────────────────────────────────────
+//  BOARD KEYWORD MAP (from Pinterest Kit)
+// ─────────────────────────────────────────────
+const BOARD_KEYWORDS = {
+    'Independent Music Business': 'music business, independent artist, music rights, BMI registration, music publishing',
+    'Music Publishing 101': 'music publishing, PRO registration, royalties, publishing admin, Sentric Music',
+    'Artist Legacy Building': 'artist legacy, music catalog, creative legacy, long-term artist, music archive',
+    'Own Your Masters': 'own your masters, master recordings, music ownership, copyright music, artist rights',
+    'Intentional Music Creation': 'intentional creativity, depth over virality, music philosophy, slow music, creative process',
+    'R BILL The Source': 'R BILL music, Afro-fusion, SONGSBYR, AFO, independent Afro artist',
+    'Music Platform Without Algorithms': 'private music platform, music without algorithms, fan relationship, SONGSBYR, music community',
+    'African Artist Business Tips': 'African music business, Nigerian music industry, Afrobeats business, global music royalties, African independent artist',
+    'Music Quotes and Philosophy': 'music quotes, artist philosophy, creative quotes, music inspiration, musician mindset',
+    'Digital Products for Musicians': 'musician templates, music business tools, artist resources, music checklist, digital products musicians'
+};
+
+// ─────────────────────────────────────────────
+//  TEMPLATES
+// ─────────────────────────────────────────────
+const TEMPLATES = [
+    // 0 — Single Drop (Quote/Lyric)
+    {
+        type:'quote-lyric', typeLabel:'Quote / Lyric Pin',
+        tag:'NEW SINGLE / OUT NOW', title:'Midnight Signal',
+        quote:'\u201cEvery frequency carries a memory. This one carries mine \u2014 played at 3am for no one and everyone at once.\u201d',
+        author:'— Stream now. Link in bio.',
+        accent:'gold', bg:'radial', frame:'thin', div:'diamond',
+        board:'R BILL The Source',
+        img:'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?auto=format&fit=crop&q=80&w=1000',
+        is:{ op:75, bl:5, dk:30, sc:110, y:0, ov:'indigo', fi:'normal' }
+    },
+    // 1 — Lyric Card
+    {
+        type:'quote-lyric', typeLabel:'Quote / Lyric Pin',
+        tag:'LYRIC CARD / VERSE II', title:'Red Season',
+        quote:'\u201cI wrote this song in the dark because the light kept lying to me. Some truths only come out after midnight.\u201d',
+        author:"— Save this. Full song in bio.",
+        accent:'crimson', bg:'textured', frame:'flank', div:'asterisk',
+        board:'Music Quotes and Philosophy',
+        img:'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=1000',
+        is:{ op:50, bl:3, dk:50, sc:120, y:-10, ov:'crimson', fi:'normal' }
+    },
+    // 2 — Album Announce (Educational)
+    {
+        type:'educational', typeLabel:'Educational List Pin',
+        tag:'5 THINGS TO KNOW / BEFORE YOU RELEASE',
+        title:'Before You Release',
+        quote:'Register with BMI. Get your ISRC codes. Set up a publishing administrator. Document your splits. Protect your masters. In that order.',
+        author:'— Free checklist. Link in bio.',
+        accent:'gold', bg:'radial', frame:'flank', div:'line',
+        board:'Independent Music Business',
+        img:'',
+        is:{ op:60, bl:4, dk:40, sc:110, y:0, ov:'indigo', fi:'normal' }
+    },
+    // 3 — Era Statement
+    {
+        type:'artist-era', typeLabel:'Artist / Era Statement Pin',
+        tag:'ERA III \u00B7 THE TEMPLE \u00B7 LIVE NOW',
+        title:'The House of AKPAN',
+        quote:'This is not a music career. It is a legacy being built in real time. You are witnessing it.',
+        author:'— R BILL \u00B7 SONGSBYR \u00B7 Enter at the link.',
+        accent:'gold', bg:'radial', frame:'none', div:'diamond',
+        board:'R BILL The Source',
+        img:'https://images.unsplash.com/photo-1548625361-155deee223d2?auto=format&fit=crop&q=80&w=1000',
+        is:{ op:40, bl:6, dk:55, sc:110, y:0, ov:'indigo', fi:'normal' }
+    },
+    // 4 — Philosophy Quote
+    {
+        type:'philosophy', typeLabel:'Philosophy Quote Pin',
+        tag:'SONGSBYR \u00B7 THE SOURCE MANIFESTO',
+        title:'',
+        quote:'\u201cYou didn\u2019t subscribe. You crossed a threshold.\u201d',
+        author:'— The Source \u00B7 SONGSBYR.COM',
+        accent:'gold', bg:'radial', frame:'corners', div:'diamond',
+        board:'Music Quotes and Philosophy',
+        img:'',
+        is:{ op:60, bl:4, dk:40, sc:110, y:0, ov:'indigo', fi:'normal' }
+    },
+    // 5 — Behind the Scenes
+    {
+        type:'behind-scenes', typeLabel:'Behind the Scenes Pin',
+        tag:'INSIDE THE PROCESS \u00B7 ERA III',
+        title:'',
+        quote:'Every note I sing is a prayer for strength. This is where it starts \u2014 before the mix, before the master, before you ever hear it.',
+        author:'— R BILL \u00B7 Full story in bio.',
+        accent:'white', bg:'textured', frame:'corners', div:'none',
+        board:'R BILL The Source',
+        img:'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&q=80&w=1000',
+        is:{ op:55, bl:3, dk:45, sc:115, y:0, ov:'black', fi:'normal' }
+    }
+];
+
+// Product templates — content only, price comes from UI input
+const PRODUCT_TEMPLATES = [
+    {
+        type:'product', typeLabel:'Product Promo Pin',
+        tag:'\u25C8 DIGITAL PRODUCT \u00B7 INDEPENDENT ARTIST RESOURCE',
+        title:'Independent Artist Ownership Checklist',
+        quote:'Most artists release music without protecting it first. Royalties go uncollected. Rights get confused. This one-page checklist fixes that \u2014 before you release.',
+        accent:'crimson', bg:'solid', frame:'thin', div:'diamond',
+        board:'Digital Products for Musicians',
+        img:'',
+        is:{ op:60, bl:4, dk:40, sc:110, y:0, ov:'indigo', fi:'normal' }
+    },
+    {
+        type:'product', typeLabel:'Product Promo Pin',
+        tag:'\u25C8 DIGITAL PRODUCT \u00B7 CATALOG & PUBLISHING TOOLKIT',
+        title:'Music Legacy Starter Kit',
+        quote:'Catalog tracker. Release checklist. Publishing explainer. Collaboration split template. Era framework. Everything to build a protected, independently owned catalog.',
+        accent:'crimson', bg:'solid', frame:'thin', div:'diamond',
+        board:'Digital Products for Musicians',
+        img:'',
+        is:{ op:60, bl:4, dk:40, sc:110, y:0, ov:'indigo', fi:'normal' }
+    },
+    {
+        type:'product', typeLabel:'Product Promo Pin',
+        tag:'\u25C8 DIGITAL PRODUCT \u00B7 PLATFORM BUILDING GUIDE',
+        title:'Build Your Own Source',
+        quote:'Spotify owns the algorithm. Apple owns the discovery. Instagram owns the feed. This guide shows how to build a private music platform and own your audience relationship \u2014 without investors.',
+        accent:'crimson', bg:'solid', frame:'thin', div:'diamond',
+        board:'Digital Products for Musicians',
+        img:'',
+        is:{ op:60, bl:4, dk:40, sc:110, y:0, ov:'indigo', fi:'normal' }
+    }
+];
+
+function loadTpl(i) {
+    const d = TEMPLATES[i];
+    // Set pin type
+    applyLayout(d.type, d.typeLabel);
+    document.getElementById('inp-tag').value    = d.tag;
+    document.getElementById('inp-title').value  = d.title;
+    document.getElementById('inp-quote').value  = d.quote;
+    document.getElementById('inp-author').value = d.author;
+    document.getElementById('sel-accent').value = d.accent;
+    document.getElementById('sel-bg').value     = d.bg;
+    document.getElementById('sel-frame').value  = d.frame;
+    // Set board
+    const boardSel = document.getElementById('inp-board');
+    for (let opt of boardSel.options) {
+        if (opt.value === d.board) { boardSel.value = d.board; break; }
+    }
+    setDiv(d.div);
+    if (d.img) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+            uploadedImg = img;
+            document.getElementById('btn-clear').style.display = 'inline';
+            document.getElementById('s-opacity').value = d.is.op;
+            document.getElementById('s-blur').value    = d.is.bl;
+            document.getElementById('s-darken').value  = d.is.dk;
+            document.getElementById('s-scale').value   = d.is.sc;
+            document.getElementById('s-y').value       = d.is.y;
+            document.getElementById('sel-overlay').value = d.is.ov;
+            document.getElementById('sel-filter').value  = d.is.fi;
+            const ctrl = document.getElementById('img-ctrls');
+            ctrl.style.opacity = '1'; ctrl.style.pointerEvents = 'auto';
+            render();
+        };
+        img.src = d.img;
+    } else {
+        clearImg();
+        render();
+    }
+}
+
+function loadProductTpl(i) {
+    const d = PRODUCT_TEMPLATES[i];
+    const priceIds = ['prod1-price','prod2-price','prod3-price'];
+    const price = document.getElementById(priceIds[i]).value || '—';
+    applyLayout(d.type, d.typeLabel);
+    document.getElementById('inp-tag').value    = d.tag;
+    document.getElementById('inp-title').value  = d.title;
+    document.getElementById('inp-quote').value  = d.quote;
+    document.getElementById('inp-author').value = price + ' \u00B7 Get it now. Link in bio.';
+    document.getElementById('sel-accent').value = d.accent;
+    document.getElementById('sel-bg').value     = d.bg;
+    document.getElementById('sel-frame').value  = d.frame;
+    const boardSel = document.getElementById('inp-board');
+    boardSel.value = d.board;
+    setDiv(d.div);
+    clearImg();
+    render();
+}
+
+// ─────────────────────────────────────────────
+//  COLOUR HELPERS
+// ─────────────────────────────────────────────
+const PALETTE = {
+    indigo:'#0d0d1a', gold:'#c9a84c', crimson:'#c0233a',
+    white:'#f0ead8', whiteDim:'#9e9580', goldDim:'#7a5e2a', black:'#000000'
+};
+const OVERLAY_MAP = { indigo:'#0d0d1a', crimson:'#c0233a', gold:'#c9a84c', black:'#000000' };
+
+function accentHex(v) {
+    return v === 'crimson' ? PALETTE.crimson : v === 'white' ? PALETTE.white : PALETTE.gold;
+}
+
+// ─────────────────────────────────────────────
+//  CANVAS RENDER
+// ─────────────────────────────────────────────
+function render(forExport = false) {
+    const canvas = document.getElementById('render-canvas');
+    const ctx    = canvas.getContext('2d');
+
+    if (forExport) {
+        canvas.width  = 2000;
+        canvas.height = 3000;
+        ctx.scale(2, 2);
+    } else {
+        canvas.width  = 1000;
+        canvas.height = 1500;
+    }
+
+    const W = 1000, H = 1500;
+
+    const tag     = document.getElementById('inp-tag').value;
+    const title   = document.getElementById('inp-title').value;
+    const quote   = document.getElementById('inp-quote').value;
+    const author  = document.getElementById('inp-author').value;
+    const accent  = document.getElementById('sel-accent').value;
+    const bg      = document.getElementById('sel-bg').value;
+    const frame   = document.getElementById('sel-frame').value;
+    const wmark   = document.getElementById('sel-wordmark').value;
+    const shadow  = document.getElementById('sel-shadow').value;
+    const plate   = document.getElementById('sel-plate').value;
+    const qWeight = document.getElementById('sel-weight').value;
+    const qSize   = parseInt(document.getElementById('s-qsize').value);
+
+    const imgOp  = parseFloat(document.getElementById('s-opacity').value) / 100;
+    const imgBl  = parseFloat(document.getElementById('s-blur').value);
+    const imgDk  = parseFloat(document.getElementById('s-darken').value) / 100;
+    const imgSc  = parseFloat(document.getElementById('s-scale').value) / 100;
+    const imgY   = parseFloat(document.getElementById('s-y').value) / 100;
+    const imgOv  = document.getElementById('sel-overlay').value;
+    const imgFi  = document.getElementById('sel-filter').value;
+
+    if (!forExport) {
+        document.getElementById('char-count').innerText = quote.length + ' ch';
+        document.getElementById('v-opacity').innerText  = Math.round(imgOp*100) + '%';
+        document.getElementById('v-blur').innerText     = imgBl + 'px';
+        document.getElementById('v-darken').innerText   = Math.round(imgDk*100) + '%';
+        document.getElementById('v-scale').innerText    = Math.round(imgSc*100) + '%';
+        document.getElementById('v-y').innerText        = Math.round(imgY*100) + '%';
+        document.getElementById('v-qsize').innerText    = qSize;
+    }
+
+    const aColor = accentHex(accent);
+
+    // BACKGROUND
+    ctx.fillStyle = PALETTE.indigo;
+    ctx.fillRect(0, 0, W, H);
+
+    if (bg === 'radial' || bg === 'textured') {
+        const g = ctx.createRadialGradient(W/2, H/2, 40, W/2, H/2, H * 0.75);
+        g.addColorStop(0,   '#18182e');
+        g.addColorStop(0.5, '#0d0d1a');
+        g.addColorStop(1,   '#05050b');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, W, H);
+    }
+
+    // IMAGE
+    if (uploadedImg) {
+        ctx.save();
+        let flt = 'blur(' + imgBl + 'px)';
+        if (imgFi === 'grayscale') flt += ' grayscale(100%) contrast(115%)';
+        if (imgFi === 'sepia')     flt += ' sepia(65%) saturate(130%)';
+        ctx.filter      = flt;
+        ctx.globalAlpha = imgOp;
+        const cR = W / H;
+        const iR = uploadedImg.width / uploadedImg.height;
+        let dW, dH;
+        if (iR > cR) { dH = H; dW = H * iR; }
+        else          { dW = W; dH = W / iR; }
+        dW *= imgSc; dH *= imgSc;
+        const dX = (W - dW) / 2;
+        const dY = (H - dH) / 2 + imgY * H;
+        ctx.drawImage(uploadedImg, dX, dY, dW, dH);
+        ctx.restore();
+
+        ctx.save();
+        ctx.fillStyle   = OVERLAY_MAP[imgOv] || PALETTE.indigo;
+        ctx.globalAlpha = imgDk;
+        ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+    }
+
+    // GRAIN
+    if (bg === 'textured') {
+        const nc = document.createElement('canvas');
+        nc.width = nc.height = 150;
+        const nx = nc.getContext('2d');
+        const id = nx.createImageData(150, 150);
+        for (let i = 0; i < id.data.length; i += 4) {
+            const v = Math.floor(Math.random() * 30);
+            id.data[i] = v; id.data[i+1] = v; id.data[i+2] = v; id.data[i+3] = 18;
+        }
+        nx.putImageData(id, 0, 0);
+        ctx.fillStyle = ctx.createPattern(nc, 'repeat');
+        ctx.fillRect(0, 0, W, H);
+    }
+
+    // FRAME
+    const bi = 55;
+    if (frame === 'thin') {
+        ctx.strokeStyle = aColor + '35';
+        ctx.lineWidth   = 1.5;
+        ctx.strokeRect(bi, bi, W - bi*2, H - bi*2);
+    } else if (frame === 'flank') {
+        ctx.strokeStyle = aColor;
+        ctx.lineWidth   = 4;
+        ctx.beginPath(); ctx.moveTo(bi, bi); ctx.lineTo(bi, H - bi); ctx.stroke();
+    } else if (frame === 'corners') {
+        ctx.strokeStyle = aColor;
+        ctx.lineWidth   = 2.5;
+        const bl = 30;
+        const corners = [
+            [bi+bl, bi, bi, bi, bi, bi+bl],
+            [W-bi-bl, bi, W-bi, bi, W-bi, bi+bl],
+            [bi+bl, H-bi, bi, H-bi, bi, H-bi-bl],
+            [W-bi-bl, H-bi, W-bi, H-bi, W-bi, H-bi-bl]
+        ];
+        corners.forEach(([x1,y1,x2,y2,x3,y3]) => {
+            ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.stroke();
+        });
+    }
+
+    // SHADOW HELPERS
+    function setShadow() {
+        if (shadow === 'subtle') {
+            ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 2;
+        } else if (shadow === 'strong') {
+            ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 4;
+        } else {
+            ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+        }
+    }
+    function clearShadow() {
+        ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    }
+
+    // TEXT HELPERS
+    function measureLines(text, maxW, fontStr) {
+        ctx.save(); ctx.font = fontStr;
+        const words = text.split(' ');
+        let line = '', lines = [];
+        words.forEach((w, n) => {
+            const test = line + w + ' ';
+            if (ctx.measureText(test.trim()).width > maxW && n > 0) {
+                lines.push(line.trim()); line = w + ' ';
+            } else { line = test; }
+        });
+        lines.push(line.trim());
+        ctx.restore();
+        return lines;
+    }
+
+    function drawLines(lines, x, y, lh, fontStr, color) {
+        ctx.save(); setShadow();
+        ctx.font      = fontStr;
+        ctx.fillStyle = color;
+        ctx.textAlign = 'center';
+        lines.forEach((l, i) => ctx.fillText(l, x, y + i * lh));
+        ctx.restore();
+    }
+
+    function drawSpaced(text, x, y, fontStr, color, spacing) {
+        ctx.save(); setShadow();
+        ctx.font = fontStr; ctx.fillStyle = color; ctx.textAlign = 'center';
+        const chars = text.split('');
+        let totalW  = 0;
+        chars.forEach(c => { totalW += ctx.measureText(c).width + spacing; });
+        let cx = x - totalW / 2;
+        chars.forEach(c => { ctx.fillText(c, cx + ctx.measureText(c).width/2, y); cx += ctx.measureText(c).width + spacing; });
+        ctx.restore();
+    }
+
+    // FONT SIZES
+    const titleSize  = layoutMode === 'statement' ? 52 : 38;
+    const titleFont  = '500 ' + titleSize + 'px Cinzel';
+    const titleLH    = titleSize * 1.45;
+    const tagSize    = 18;
+    const tagFont    = "400 " + tagSize + "px 'DM Mono'";
+    const wmarkSize  = 20;
+    const wmarkFont  = '600 ' + wmarkSize + 'px Cinzel';
+    const quoteFontSize = qSize * 2.1;
+    const quoteFont  = qWeight + ' ' + quoteFontSize + "px 'Cormorant Garamond'";
+    const quoteLH    = quoteFontSize * 1.5;
+    const authorSize = 18;
+    const authorFont = "400 " + authorSize + "px 'DM Mono'";
+    const authorLH   = authorSize * 1.6;
+    const maxW = W * 0.76;
+
+    const GAP = 38;
+    let titleLines = [], titleBlockH = 0;
+    if (title) {
+        titleLines   = measureLines(title, maxW, titleFont);
+        titleBlockH  = titleLines.length * titleLH;
+    }
+    let divH = (divider !== 'none') ? 36 : 0;
+    const quoteLines  = measureLines(quote, maxW, quoteFont);
+    const quoteBlockH = quoteLines.length * quoteLH;
+    let authorLines = [], authorBlockH = 0;
+    if (author) {
+        authorLines   = measureLines(author, maxW * 0.9, authorFont);
+        authorBlockH  = authorLines.length * authorLH;
+    }
+
+    let blockH = 0;
+    if (titleBlockH > 0) blockH += titleBlockH + GAP;
+    if (divH > 0)        blockH += divH + GAP;
+    blockH += quoteBlockH;
+    if (authorBlockH > 0) blockH += GAP + authorBlockH;
+
+    const topZone = 185;
+    const botZone = 1315;
+    const avail   = botZone - topZone;
+    let cY = topZone + (avail - blockH) / 2;
+
+    // WORDMARK / TAG TOP
+    if (wmark === 'top' || wmark === 'both') {
+        drawSpaced('PINBYR', W/2, 95, wmarkFont, PALETTE.goldDim, 5);
+        drawSpaced(tag, W/2, 140, tagFont, PALETTE.whiteDim, 2);
+    } else {
+        drawSpaced(tag, W/2, 110, tagFont, PALETTE.whiteDim, 2);
+    }
+
+    // WORDMARK BOTTOM
+    if (wmark === 'bottom' || wmark === 'both') {
+        drawSpaced('PINBYR', W/2, H - 95, wmarkFont, PALETTE.goldDim, 5);
+    }
+
+    // BACKPLATE
+    if (plate !== 'none') {
+        ctx.save();
+        const pad  = 55;
+        const pW   = maxW + pad * 2;
+        const pH   = blockH + pad * 2;
+        const pX   = (W - pW) / 2;
+        const pY   = cY - pad;
+        const r    = 12;
+        const rr   = () => {
+            if (ctx.roundRect) { ctx.roundRect(pX, pY, pW, pH, r); }
+            else { ctx.rect(pX, pY, pW, pH); }
+        };
+        if (plate === 'frosted') {
+            ctx.fillStyle   = 'rgba(13,13,26,0.8)';
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.lineWidth   = 1;
+            ctx.beginPath(); rr(); ctx.fill(); ctx.stroke();
+        } else if (plate === 'bordered') {
+            ctx.fillStyle   = 'rgba(13,13,26,0.92)';
+            ctx.strokeStyle = aColor;
+            ctx.lineWidth   = 2;
+            ctx.beginPath(); rr(); ctx.fill(); ctx.stroke();
+        } else if (plate === 'vignette') {
+            const vg = ctx.createRadialGradient(W/2, cY+blockH/2, 10, W/2, cY+blockH/2, pW*0.65);
+            vg.addColorStop(0,   'rgba(13,13,26,0.97)');
+            vg.addColorStop(0.55,'rgba(13,13,26,0.65)');
+            vg.addColorStop(1,   'rgba(13,13,26,0)');
+            ctx.fillStyle = vg;
+            ctx.beginPath(); rr(); ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    // DRAW CONTENT
+    if (titleLines.length) {
+        drawLines(titleLines, W/2, cY + titleSize * 0.85, titleLH, titleFont, PALETTE.white);
+        cY += titleBlockH + GAP;
+    }
+    if (divider !== 'none') {
+        const divChar = divider === 'diamond' ? '◆' : divider === 'line' ? '—————————' : '✦';
+        ctx.save(); setShadow();
+        ctx.font      = "22px 'DM Mono'";
+        ctx.fillStyle = aColor;
+        ctx.textAlign = 'center';
+        ctx.fillText(divChar, W/2, cY + 22);
+        ctx.restore();
+        cY += divH + GAP;
+    }
+    const quoteStyle = qWeight + ' italic ' + quoteFontSize + "px 'Cormorant Garamond'";
+    drawLines(quoteLines, W/2, cY + quoteFontSize * 0.82, quoteLH, quoteStyle, PALETTE.white);
+    cY += quoteBlockH + GAP;
+    if (authorLines.length) {
+        drawLines(authorLines, W/2, cY + authorSize * 0.9, authorLH, authorFont, PALETTE.whiteDim);
+    }
+
+    // WATERMARK
+    ctx.save(); clearShadow();
+    ctx.font      = "300 15px 'DM Mono'";
+    ctx.fillStyle = 'rgba(122,94,42,0.4)';
+    ctx.textAlign = 'right';
+    const wmInset = (frame === 'corners') ? bi + 38 : (frame === 'thin' || frame === 'flank') ? bi + 18 : 50;
+    ctx.fillText('MADE WITH PINBYR', W - wmInset, H - wmInset + 10);
+    ctx.restore();
+}
+
+// ─────────────────────────────────────────────
+//  EXPORT
+// ─────────────────────────────────────────────
+function doExport() {
+    render(true);
+    const title    = document.getElementById('inp-title').value || 'pin';
+    const filename = 'pinbyr_' + title.toLowerCase().replace(/\s+/g,'_') + '.png';
+    const canvas   = document.getElementById('render-canvas');
+    canvas.toBlob(function(blob) {
+        const url  = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href     = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        render(false);
+    }, 'image/png', 1.0);
+}
+
+// ─────────────────────────────────────────────
+//  COPY PROMPT — builds the full SEO prompt
+//  from current pin state and copies it to
+//  clipboard so you can paste into Claude chat
+// ─────────────────────────────────────────────
+function buildSEOPrompt() {
+    const tag      = document.getElementById('inp-tag').value;
+    const title    = document.getElementById('inp-title').value;
+    const quote    = document.getElementById('inp-quote').value;
+    const author   = document.getElementById('inp-author').value;
+    const board    = document.getElementById('inp-board').value;
+    const boardKws = BOARD_KEYWORDS[board] || '';
+    const pinType  = pinTypeLabel;
+    const month    = new Date().toLocaleDateString('en-US', {month:'long', year:'numeric'});
+
+    return `You are a senior Pinterest SEO strategist and music marketing expert specializing in US and UK audience growth. Your job is to write high-performing Pinterest copy for SONGSBYR — a private independent music platform and publishing ecosystem built by R BILL (AKPAN ITIAT LLC). The platform is about music ownership, legacy, intentional art, and building without algorithms.
+
+CRITICAL TARGETING RULE: This account is based in Nigeria but targets US and UK Pinterest users exclusively. Write in standard American or British English. Use the exact vocabulary and search terms that US and UK music fans, independent artists, and creative entrepreneurs type into Pinterest search.
+
+Here is the pin being created:
+- Pin type: ${pinType}
+- Release label/tag: ${tag}
+- Song/album title: ${title || '(none)'}
+- Lyric or quote on pin: ${quote}
+- Artist credit line: ${author}
+- Target Pinterest board: ${board}
+- Board established keywords: ${boardKws}
+- Month/year context: ${month}
+
+Generate Pinterest copy engineered to reach US and UK users and drive SAVES (saves matter more than clicks on Pinterest).
+
+CTA RULES:
+- Quote / Lyric & Philosophy: aspirational save CTA. e.g. "Save this one." / "Pin this before you scroll past it."
+- Educational: urgency CTA to resource. e.g. "Save this, then grab the checklist in bio before your next release."
+- Product Promo: urgency + value. e.g. "This is what independent artists actually need. Link in bio."
+- Artist / Era Statement: mystique + invitation. e.g. "You are witnessing something being built. The door is in the bio."
+- Behind the Scenes: intimate + exclusive. e.g. "The full story is inside. Link in bio."
+NEVER use: Check out, Click here, Follow us, Do not miss out, Learn more.
+
+Respond ONLY with a valid JSON object — no markdown, no backticks, no preamble:
+{
+  "title": "Pinterest title max 100 chars — front-load the strongest US/UK search keyword",
+  "description": "150-300 chars. Natural American/British English. Keyword-rich first sentence. End with the right CTA.",
+  "tags": ["tag1","tag2","tag3","tag4","tag5","tag6","tag7","tag8","tag9","tag10","tag11","tag12"],
+  "alt_text": "1-2 sentences: describe what is visually on the pin, then include a natural US/UK keyword phrase",
+  "best_board": "Exact board name from SONGSBYR 10 boards that fits this pin best",
+  "best_time": "Specific day + time in EST and GMT for this pin type"
+}
+
+Keyword rules: first word(s) of title must be a keyword users type, not a brand name. Tags: mix evergreen + board-specific (${boardKws}) + SONGSBYR niche terms. No hashtag symbol. Max 20 chars per tag preferred.`;
+}
+
+function copyPrompt() {
+    const prompt = buildSEOPrompt();
+    const btn = document.getElementById('copy-prompt-btn');
+    navigator.clipboard.writeText(prompt).then(() => {
+        btn.textContent = '\u2713 Prompt Copied \u2014 Paste into Claude';
+        btn.classList.add('copied');
+        setTimeout(() => {
+            btn.textContent = '\u2756 Copy Prompt';
+            btn.classList.remove('copied');
+        }, 3000);
+        // Auto-open paste area
+        const wrap = document.getElementById('paste-area-wrap');
+        const toggle = document.getElementById('paste-toggle-btn');
+        wrap.classList.add('open');
+        toggle.classList.add('active');
+        setTimeout(() => document.getElementById('seo-paste-input').focus(), 100);
+    }).catch(() => {
+        const wrap = document.getElementById('paste-area-wrap');
+        wrap.classList.add('open');
+        const ta = document.getElementById('seo-paste-input');
+        ta.value = prompt;
+        ta.select();
+        btn.textContent = 'Select All & Copy Manually';
+    });
+}
+
+function togglePasteArea() {
+    const wrap = document.getElementById('paste-area-wrap');
+    const btn  = document.getElementById('paste-toggle-btn');
+    const isOpen = wrap.classList.contains('open');
+    wrap.classList.toggle('open', !isOpen);
+    btn.classList.toggle('active', !isOpen);
+    if (!isOpen) document.getElementById('seo-paste-input').focus();
+}
+
+// ─────────────────────────────────────────────
+//  PARSE PASTED SEO — reads Claude JSON
+//  response and fills all the output fields
+// ─────────────────────────────────────────────
+function parsePastedSEO() {
+    const raw     = document.getElementById('seo-paste-input').value.trim();
+    const err     = document.getElementById('seo-error');
+    const results = document.getElementById('seo-results');
+    const empty   = document.getElementById('seo-empty');
+
+    err.style.display = 'none';
+
+    if (!raw) {
+        err.textContent = '\u2715 Nothing pasted yet. Copy the prompt, paste it into Claude, then paste Claude\'s response here.';
+        err.style.display = 'block';
+        return;
+    }
+
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const jsonMatch = clean.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+        err.textContent = '\u2715 Couldn\'t find JSON. Make sure you\'re pasting Claude\'s full response (it should start with {).';
+        err.style.display = 'block';
+        return;
+    }
+
+    let parsed;
+    try { parsed = JSON.parse(jsonMatch[0]); }
+    catch(e) {
+        err.textContent = '\u2715 JSON parse error: ' + e.message + '. Try copying Claude\'s response again.';
+        err.style.display = 'block';
+        return;
+    }
+
+    document.getElementById('seo-val-title').textContent = parsed.title || '';
+    document.getElementById('seo-val-desc').textContent  = parsed.description || '';
+    document.getElementById('seo-val-alt').textContent   = parsed.alt_text || '';
+    document.getElementById('seo-val-board').textContent = parsed.best_board || '';
+    document.getElementById('seo-val-time').textContent  = parsed.best_time || '';
+
+    const tagsEl = document.getElementById('seo-val-tags');
+    tagsEl.innerHTML = '';
+    (parsed.tags || []).forEach(t => {
+        const span = document.createElement('span');
+        span.className = 'seo-tag';
+        span.textContent = t;
+        tagsEl.appendChild(span);
+    });
+
+    ['seo-val-title','seo-val-desc','seo-val-alt','seo-val-board','seo-val-time'].forEach(id => {
+        const el = document.getElementById(id);
+        el.classList.add('highlight');
+        setTimeout(() => el.classList.remove('highlight'), 1500);
+    });
+
+    results.style.display = 'flex';
+    empty.style.display   = 'none';
+
+    document.getElementById('seo-paste-input').value = '';
+    document.getElementById('paste-area-wrap').classList.remove('open');
+    document.getElementById('paste-toggle-btn').classList.remove('active');
+
+    const parseBtn = document.getElementById('parse-seo-btn');
+    parseBtn.textContent = '\u2713 Fields filled \u2014 copy each one above';
+    parseBtn.style.background = 'rgba(16,185,129,0.1)';
+    parseBtn.style.borderColor = '#10b981';
+    parseBtn.style.color = '#10b981';
+    setTimeout(() => {
+        parseBtn.textContent = '\u25c8 Parse & Fill Fields';
+        parseBtn.style = '';
+    }, 3000);
+}
+
+
+
+// SEO copy helpers
+function seoCopy(id, btn) {
+    const text = document.getElementById(id).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✓ Copied';
+        btn.classList.add('ok');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
+    });
+}
+
+function seoCopyTags(btn) {
+    const tags = Array.from(document.getElementById('seo-val-tags').querySelectorAll('.seo-tag'))
+        .map(t => t.textContent).join(', ');
+    navigator.clipboard.writeText(tags).then(() => {
+        btn.textContent = '✓ Copied';
+        btn.classList.add('ok');
+        setTimeout(() => { btn.textContent = 'Copy All'; btn.classList.remove('ok'); }, 2000);
+    });
+}
+
+// ─────────────────────────────────────────────
+//  SAVED TEMPLATES
+// ─────────────────────────────────────────────
+const STORAGE_KEY = 'pinbyr_saved_templates';
+
+function getSaved() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch(e) { return []; }
+}
+
+function setSaved(arr) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+    catch(e) { alert('Storage full. Delete some templates to save new ones.'); }
+}
+
+function captureImgSrc() {
+    if (!uploadedImg) return null;
+    const oc = document.createElement('canvas');
+    const ratio = uploadedImg.height / uploadedImg.width;
+    oc.width = 200; oc.height = Math.round(200 * ratio);
+    const ox = oc.getContext('2d');
+    ox.drawImage(uploadedImg, 0, 0, oc.width, oc.height);
+    return oc.toDataURL('image/jpeg', 0.75);
+}
+
+function captureState() {
+    return {
+        layout: layoutMode, divider: divider,
+        tag:    document.getElementById('inp-tag').value,
+        title:  document.getElementById('inp-title').value,
+        quote:  document.getElementById('inp-quote').value,
+        author: document.getElementById('inp-author').value,
+        accent: document.getElementById('sel-accent').value,
+        bg:     document.getElementById('sel-bg').value,
+        frame:  document.getElementById('sel-frame').value,
+        wmark:  document.getElementById('sel-wordmark').value,
+        shadow: document.getElementById('sel-shadow').value,
+        plate:  document.getElementById('sel-plate').value,
+        weight: document.getElementById('sel-weight').value,
+        qsize:  document.getElementById('s-qsize').value,
+        imgOp:  document.getElementById('s-opacity').value,
+        imgBl:  document.getElementById('s-blur').value,
+        imgDk:  document.getElementById('s-darken').value,
+        imgSc:  document.getElementById('s-scale').value,
+        imgY:   document.getElementById('s-y').value,
+        imgOv:  document.getElementById('sel-overlay').value,
+        imgFi:  document.getElementById('sel-filter').value,
+        imgSrc: uploadedImg ? captureImgSrc() : null,
+        hasImg: !!uploadedImg,
+    };
+}
+
+function applyState(state) {
+    layoutMode = state.layout || 'lyric';
+    document.querySelectorAll('.lbtn').forEach(b => b.classList.remove('on'));
+    const lBtn = document.getElementById('btn-' + layoutMode);
+    if (lBtn) lBtn.classList.add('on');
+    divider = state.divider || 'diamond';
+    document.querySelectorAll('.dbtn').forEach(b => b.classList.remove('on'));
+    const dBtn = document.getElementById('d-' + divider);
+    if (dBtn) dBtn.classList.add('on');
+    document.getElementById('inp-tag').value    = state.tag    || '';
+    document.getElementById('inp-title').value  = state.title  || '';
+    document.getElementById('inp-quote').value  = state.quote  || '';
+    document.getElementById('inp-author').value = state.author || '';
+    document.getElementById('sel-accent').value   = state.accent  || 'gold';
+    document.getElementById('sel-bg').value       = state.bg      || 'radial';
+    document.getElementById('sel-frame').value    = state.frame   || 'thin';
+    document.getElementById('sel-wordmark').value = state.wmark   || 'bottom';
+    document.getElementById('sel-shadow').value   = state.shadow  || 'subtle';
+    document.getElementById('sel-plate').value    = state.plate   || 'none';
+    document.getElementById('sel-weight').value   = state.weight  || '400';
+    document.getElementById('s-qsize').value      = state.qsize   || '24';
+    document.getElementById('s-opacity').value    = state.imgOp || '60';
+    document.getElementById('s-blur').value       = state.imgBl || '4';
+    document.getElementById('s-darken').value     = state.imgDk || '40';
+    document.getElementById('s-scale').value      = state.imgSc || '110';
+    document.getElementById('s-y').value          = state.imgY  || '0';
+    document.getElementById('sel-overlay').value  = state.imgOv || 'indigo';
+    document.getElementById('sel-filter').value   = state.imgFi || 'normal';
+    if (state.hasImg && state.imgSrc) {
+        const img = new Image();
+        img.onload = function() {
+            uploadedImg = img;
+            document.getElementById('btn-clear').style.display = 'inline';
+            const ctrl = document.getElementById('img-ctrls');
+            ctrl.style.opacity = '1'; ctrl.style.pointerEvents = 'auto';
+            render();
+        };
+        img.src = state.imgSrc;
+    } else {
+        uploadedImg = null;
+        document.getElementById('btn-clear').style.display = 'none';
+        const ctrl = document.getElementById('img-ctrls');
+        ctrl.style.opacity = '.35'; ctrl.style.pointerEvents = 'none';
+        render();
+    }
+}
+
+function saveTemplate() {
+    const name = document.getElementById('save-name-inp').value.trim();
+    if (!name) {
+        document.getElementById('save-name-inp').focus();
+        document.getElementById('save-name-inp').style.borderColor = '#f43f5e';
+        setTimeout(() => { document.getElementById('save-name-inp').style.borderColor = ''; }, 1200);
+        return;
+    }
+    const arr = getSaved();
+    const id  = Date.now().toString();
+    const state = captureState();
+    const thumbCanvas = document.createElement('canvas');
+    const src = document.getElementById('render-canvas');
+    thumbCanvas.width = 60; thumbCanvas.height = 90;
+    const tc = thumbCanvas.getContext('2d');
+    tc.drawImage(src, 0, 0, 60, 90);
+    const thumb = thumbCanvas.toDataURL('image/jpeg', 0.7);
+    arr.push({ id, name, state, thumb, savedAt: new Date().toLocaleDateString() });
+    setSaved(arr);
+    document.getElementById('save-name-inp').value = '';
+    renderSavedList();
+    const btn = document.getElementById('save-now-btn');
+    btn.innerText = '✓ Saved'; btn.style.background = 'rgba(16,185,129,.15)'; btn.style.borderColor = '#10b981'; btn.style.color = '#10b981';
+    setTimeout(() => { btn.innerText = '◈ Save'; btn.style = ''; }, 1800);
+}
+
+function loadSaved(id) {
+    const arr = getSaved();
+    const item = arr.find(t => t.id === id);
+    if (!item) return;
+    applyState(item.state);
+}
+
+function deleteSaved(id) {
+    let arr = getSaved();
+    arr = arr.filter(t => t.id !== id);
+    setSaved(arr);
+    renderSavedList();
+}
+
+function renderSavedList() {
+    const arr     = getSaved();
+    const list    = document.getElementById('saved-list');
+    const emptyEl = document.getElementById('empty-msg');
+    list.querySelectorAll('.saved-slot').forEach(el => el.remove());
+    if (arr.length === 0) {
+        if (emptyEl) emptyEl.style.display = 'block';
+        return;
+    }
+    if (emptyEl) emptyEl.style.display = 'none';
+    [...arr].reverse().forEach(item => {
+        const slot = document.createElement('div');
+        slot.className = 'saved-slot';
+        slot.innerHTML = `
+            <div class="saved-thumb"><img src="${item.thumb}" alt=""></div>
+            <div style="flex:1;min-width:0;">
+                <div class="saved-name">${item.name}</div>
+                <div style="font-family:'DM Mono',monospace;font-size:8px;color:#2a2a3a;margin-top:2px;">${item.savedAt}</div>
+            </div>
+            <button class="sload-btn" onclick="loadSaved('${item.id}')">Load</button>
+            <button class="sdel-btn"  onclick="deleteSaved('${item.id}')">✕</button>
+        `;
+        list.appendChild(slot);
+    });
+}
+
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+render();
+renderSavedList();
+</script>
+</body>
+</html>
